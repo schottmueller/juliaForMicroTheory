@@ -1,0 +1,257 @@
+#+TITLE:   Geographic data 
+#+AUTHOR:    Christoph Schottmueller
+#+EMAIL:    
+#+DATE:     
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t 
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc 
+#+INFOJS_OPT: view:nil toc:nil ltoc:nil mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+HTML_HEAD: <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"> </script>
+
+* Geolocation and (driving) distances
+
+The first task is soften to find the coordinates, i.e. longitude and latiutude, of certain addresses. This is called geolocating. The code below uses the webservice nominatim to do this.
+
+#+name: geolocation
+#+BEGIN_SRC julia :exports both :returns output :results output
+using HTTP
+using JSON
+
+addressList = ["Mühlenstraße 21, 50321 Brühl","Joseph-Stelzmann Straße, 50931 Köln", "Bonner Straße 84, 50389 Wesseling" ]
+
+#nominatim requires a user agent and will block you otherwise
+HTTP.setuseragent!("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.120 Safari/537.36")
+
+function getCoordinates(addressList)
+    """
+    getCoordinates(addressList::Array{String,1})
+
+    returns a Vector of coordinates in (lat,lon) format as well as a data Array that contains all the data returned by nominatim
+    """
+    coordinatesList = Array{Tuple{Float64,Float64},1}(undef, length(addressList)) # will contain (lat,lon) of addresses in addressList
+    data = Array{Any,1}(undef,length(addressList)) # will contain all data nominatim gives for each request
+    for (i,address) in enumerate(addressList)
+        addressFormatted = join(split(address),"+")
+        rawdata = HTTP.get(string("https://nominatim.openstreetmap.org/search?q=",addressFormatted,"&format=json&limit=1"))
+        data[i]=JSON.parse(String(rawdata.body))[1]
+        coordinatesList[i] = parse(Float64,data[i]["lat"]),parse(Float64,data[i]["lon"])
+        sleep(1) #nominatim will block you if you have more than 1 request per second
+    end
+    return coordinatesList , data
+end
+
+coordinates = getCoordinates(addressList)[1]
+
+#+END_SRC
+
+#+RESULTS: geolocation
+: 3-element Array{String,1}:
+:  "Mühlenstraße 21, 50321 Brühl"       
+:  "Joseph-Stelzmann Straße, 50931 Köln"
+:  "Bonner Straße 84, 50389 Wesseling"  
+: getCoordinates (generic function with 1 method)
+: 3-element Array{Tuple{Float64,Float64},1}:
+:  (50.827380149999996, 6.900553848831672)
+:  (50.9249798, 6.9201527)                
+:  (50.821768649999996, 6.985904769686408)
+
+The next task is to compute distance between the geolocated addresses. When one has coordinates (see above) computing distances as the crow flies is simple.
+
+#+name: crowdistance
+#+BEGIN_SRC julia :exports both :returns output :results output
+coordinates = [(50.827380149999996, 6.900553848831672),(50.9249798, 6.9201527),(50.821768649999996, 6.985904769686408)]
+
+function pointDistance(x,y) 
+    """
+    pointDistance(x,y) 
+
+    returns distance in km between point x=(latitiude x,longitude x) and y
+    (calculation uses the "haversine formula" and an earth radius of 6365 km)
+    """
+    dlon = deg2rad(y[2] - x[2])
+    dlat = deg2rad(y[1] - x[1])
+    a = (sin(dlat/2))^2 + cos(deg2rad(x[1])) * cos(deg2rad(y[1])) * (sin(dlon/2))^2
+    c = 2 * atan( sqrt(a), sqrt(1-a) )
+    return 6365 * c
+end
+
+function crowMatrix(coordinates)
+    out = zeros(Float64,length(coordinates),length(coordinates))
+    for i in 1:length(coordinates)
+        for j in i+1:length(coordinates)
+            out[i,j]=pointDistance(coordinates[i],coordinates[j])
+            out[j,i]=pointDistance(coordinates[i],coordinates[j])
+        end
+    end
+    return out
+end
+
+crowMatrix(coordinates)
+#+END_SRC
+
+#+RESULTS: crowdistance
+#+begin_example
+3-element Array{Tuple{Float64,Float64},1}:
+ (50.827380149999996, 6.900553848831672)
+ (50.9249798, 6.9201527)                
+ (50.821768649999996, 6.985904769686408)
+pointDistance (generic function with 1 method)
+crowMatrix (generic function with 1 method)
+3×3 Array{Float64,2}:
+  0.0      10.9291   6.02188
+ 10.9291    0.0     12.3576 
+  6.02188  12.3576   0.0    
+#+end_example
+
+When one wants to know how close places are for humans it is often more natural to think of driving times (or driving distance) instead of "as the crow flies". The code below uses the webservice OSRM to obtain driving times and distances.
+
+#+name: drivingtime
+#+BEGIN_SRC julia :exports both :returns output :results output
+using HTTP
+using JSON
+coordinates = [(50.827380149999996, 6.900553848831672),(50.9249798, 6.9201527),(50.821768649999996, 6.985904769686408)]
+
+function distMatrixOSRM(coordinates)
+    """
+    distMatrix(coordinates)
+
+    returns a matrix of distances (in km) and driving times (in seconds) between all locations in coordinates (fastest route) 
+    """
+    # create output matrices
+    distanceMatrix = zeros(Float64,length(coordinates),length(coordinates))
+    timeMatrix = zeros(Float64,length(coordinates),length(coordinates))
+    #
+    #fill output matrices
+    for i in 1:length(coordinates)
+        for j in 1:length(coordinates)
+            if i!=j
+                rawdata = HTTP.get(string("http://router.project-osrm.org/route/v1/driving/",coordinates[i][2],",",coordinates[i][1],";",coordinates[j][2],",",coordinates[j][1],"?overview=false"))
+                tdistance, ttime = jsonParsing(String(rawdata.body))
+                distanceMatrix[i,j] = tdistance/1000 #as OSRM returns distance in m 
+                timeMatrix[i,j] = ttime
+                sleep(1)
+            end
+        end
+    end
+    return distanceMatrix, timeMatrix
+end
+
+# this function extracts the relevant info from json formatted output
+# necessary as JSON package has problems with output (probably with \" )
+function jsonParsing(jsonstring)
+    #println(kmlstring[35:150])
+    numbers = [i for i in "1234567890."]
+    isnotcharnumber(x) = !(x in numbers)
+    dstart = collect(findfirst("\"distance\":",jsonstring))[end]+1
+    dend = findfirst(isnotcharnumber,jsonstring[dstart:end])+dstart-2
+    distance = parse(Float64,jsonstring[dstart:dend])
+    tstart = collect(findfirst("\"duration\":",jsonstring))[end]+1
+    tend = findfirst(isnotcharnumber,jsonstring[tstart:end])+tstart-2
+    ttime = parse(Float64,jsonstring[tstart:tend])
+    return distance, ttime
+end
+
+distMatrixOSRM(coordinates)
+#+END_SRC
+
+#+RESULTS: drivingtime
+: 3-element Array{Tuple{Float64,Float64},1}:
+:  (50.827380149999996, 6.900553848831672)
+:  (50.9249798, 6.9201527)                
+:  (50.821768649999996, 6.985904769686408)
+: distMatrixOSRM (generic function with 1 method)
+: jsonParsing (generic function with 1 method)
+: ([0.0 21.0192 7.6336; 17.4808 0.0 16.877200000000002; 9.0305 21.1234 0.0], [0.0 2107.3 1063.6; 1919.5 0.0 1616.9; 1134.2 1855.2 0.0])
+
+* Visualizing geographic data
+
+Suppose you want to talk about differences in unemployment between German states. It is hard to get an overview over this data in numeric form but it is easy to understand a plot where the map is shaded according to unemployment. How to make such a map?
+
+We need two data sources: First, data that defines the map. We get this from official sources and I will use [[https://daten.gdz.bkg.bund.de/produkte/vg/vg250_kompakt_0101/aktuell/vg250_01-01.gk3.shape.kompakt.zip][this shape file]] provided by the "Bundesamt für Kartographie aund Geodäsie" in the following (yes these are a lot of files and some of them are not super small). Second, we need unemployment figures at regional level and I use data from [[https://www.regionalstatistik.de]["Statistische Ämter des Bundes und der Länder"]]. More specifically, I have unemployment data for 2018 on the district level ("Kreis") and (in another file) population data. As unemployment rate I use number unemployed divided by population. (This is not the usual unemployment rate where one typically divides by the number of people in the labor force, i.e. excluding retirees, children etc.) 
+
+The geographic data is provided as "shape files" and we use the package Shapefiles.jl to read them in.
+
+#+name: geoplotting
+#+BEGIN_SRC julia :exports code :tangle yes :results value
+using Shapefile, CSV, DataFrames, Plots
+
+#shp = Shapefile.shapes(Shapefile.Table("./data/vg250-ew_2017-12-31.gk3.shape.ebenen/vg250-ew_ebenen/VG250_KRS.shp")); #this works only if there is no missing data anywhere and rows in CSV and shp are in same order
+
+shpt = Shapefile.Table("./data/vg250-ew_2017-12-31.gk3.shape.ebenen/vg250-ew_ebenen/VG250_KRS.shp");
+
+unemploy = CSV.read("./data/unemploymentKreis.csv",header=["year","id","name","unTotal","unForeign","unDisable","un1520","un1525","un5565","unLongterm"],datarow=11,delim=";",footerskip=4,missingstring="-");
+pop = CSV.read("./data/popKreis.csv",header=["id","name","popTotal","popMale","popFemale"],datarow=10,delim=";",footerskip=4,missingstring="-");
+
+unemploy = unemploy[unemploy.id.>99,2:4]; #drop summary observation for states and concentrate on total unemployment
+pop = pop[pop.id.>99,1:3];
+
+df = join(unemploy,pop[:,[1,3]],on=:id); #add popultation info to df
+df.unTotRatio = df.unTotal ./ df.popTotal; #unemployment ratio
+
+#unfortunately plotting does not work if we have missing values, e.g. either rows with identifiers in shpt that are not in the CSV file or missing values in the CSV files; the following creates a new shape file and a new data vector only using the rows where we have complete data
+
+values = Array{Float64,1}() #create empty Array that will contain the unTotRatio for non-missing observations
+shpnew = empty(Shapefile.shapes(shpt)) #create empty shape file
+
+for row in shpt
+    nrow = findfirst(df.id.==parse(Int64,row.RS))
+    if (nrow!=nothing) 
+        if (df[nrow,:unTotRatio]!=NaN) & (!ismissing(df[nrow,:unTotRatio]))
+            push!(shpnew,Shapefile.shape(row))
+            push!(values,df[nrow,:unTotRatio])
+	end    
+    end
+end
+
+plot(shpnew,fill_z=values',fillcolor=:blues,colorbar=true,foreground_color=:white,foreground_color_text=:black,ticks=false)
+
+#plot(shp,fill_z=df.unTotRatio',fillcolor=:blues,colorbar=true,foreground_color=:white,foreground_color_text=:black,ticks=false) #this works only if there is no missing data anywhere and rows in CSV and shp are in same order
+
+savefig("./unemployrate.png")
+#+END_SRC
+
+[[./unemployrate.png]]
+
+
+For reusability, I wrote some of the code above into a function. To get the same result as above one would call the function with "plotMap(shpt,:RS,df.id,df.unTotRatio)" after creating the joint DataFrame with the variable unTotRatio.
+
+#+name: geoplotting2
+#+BEGIN_SRC julia :exports code :tangle yes :results value
+using Shapefile, CSV, DataFrames, Plots
+
+
+function plotMap(shpt,idVar,idVec,dataVec)
+""" plotMap(shpt,idVar,idVec,dataVec)
+
+returns plot
+
+shpt::Shapefile.Table{Union{Missing, Shapefile.Polygon}} usually created by shpt=Shapefile.Table("file.shp")
+idVar::Symbol name of id variable in shpt
+idVec Vector of id from data file
+dataVec Vector of data from data file
+"""
+values = Array{eltype(dataVec),1}() #create empty Array that will contain data values for non-missing observations
+shpnew = empty(Shapefile.shapes(shpt)) #create empty shape file
+
+for row in shpt
+    if (typeof(eval(:($row.$idVar)))==String) & (eltype(idVec)!=String)
+        nrow = findfirst(idVec.==parse(eltype(idVec),eval(:($row.$idVar))))
+    else
+        nrow = findfirst(idVec.==eval(:($row.$idVar)))
+    end
+    if (nrow!=nothing) 
+        if (dataVec[nrow]!=NaN) & (!ismissing(dataVec[nrow]))
+            push!(shpnew,Shapefile.shape(row))
+            push!(values,dataVec[nrow])
+	end    
+    end
+end
+
+return plot(shpnew,fill_z=values',fillcolor=:blues,colorbar=true,foreground_color=:white,foreground_color_text=:black,ticks=false)
+end
+
+#+END_SRC
