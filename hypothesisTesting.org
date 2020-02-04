@@ -1,0 +1,586 @@
+#+TITLE:   Hypothesis Testing
+#+AUTHOR:    Christoph Schottmueller
+#+EMAIL:    
+#+DATE:     
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t 
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc 
+#+INFOJS_OPT: view:nil toc:nil ltoc:nil mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+HTML_HEAD: <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"> </script>
+
+* Pearson's ChiSquared test: categorical variables
+
+There are three applications for this test: 
+- goodness of fit: testing whether a nominal variable has a given distribution, e.g. data from repeated role of a dice and H_0 is that the dice is fair
+- homogeneity: testing for equivalence of marginal distributions across groups, e.g. men and women (the groups) have the same distribution of educational attainment (distribution over several categories of schooling outcomes) with H_0 being the same distribution
+- independence: testing for independence, e.g. H_0: race and preferred political party are independent
+
+Note that the test statistic is only $\chi^2$ distributed if the number of observations is large. Furthermore, each "cell" should have enough observations (e.g. more than 5).
+
+#+name: chi2goodnessOfFit
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit
+
+df = DataFrame(eyes = [1, 2, 3, 4, 5 ,6], frequency = [10, 15, 15,20, 15,25])
+
+ChisqTest(df[:,:frequency])
+
+#+END_SRC
+
+#+RESULTS: chi2goodnessOfFit
+#+begin_example
+6×2 DataFrame
+│ Row │ eyes  │ frequency │
+│     │ Int64 │ Int64     │
+├─────┼───────┼───────────┤
+│ 1   │ 1     │ 10        │
+│ 2   │ 2     │ 15        │
+│ 3   │ 3     │ 15        │
+│ 4   │ 4     │ 20        │
+│ 5   │ 5     │ 15        │
+│ 6   │ 6     │ 25        │
+Pearson's Chi-square Test
+-------------------------
+Population details:
+    parameter of interest:   Multinomial Probabilities
+    value under h_0:         [0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666]
+    point estimate:          [0.1, 0.15, 0.15, 0.2, 0.15, 0.25]
+    95% confidence interval: Tuple{Float64,Float64}[(0.01, 0.1996), (0.06, 0.2496), (0.06, 0.2496), (0.11, 0.2996), (0.06, 0.2496), (0.16, 0.3496)]
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    one-sided p-value:           0.1562
+
+Details:
+    Sample size:        100
+    statistic:          8.000000000000014
+    degrees of freedom: 5
+    residuals:          [-1.6329931618554518, -0.4082482904638625, -0.4082482904638625, 0.8164965809277267, -0.4082482904638625, 2.041241452319316]
+    std. residuals:     [-1.7888543819998313, -0.4472135954999573, -0.4472135954999573, 0.8944271909999165, -0.4472135954999573, 2.2360679774997902]
+
+#+end_example
+
+To test homogeneity the frequency table (also called contingency table) has to be fed into "ChisqTest". (Note that the example below is not suitable for a $\chi^2$ test as the number of observations in some cells is less than 5. Fisher's exact test should be used here instead.)
+
+#+name: chi2homogeneity
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit, FreqTables
+
+df = DataFrame(gender = [0,0,1,0,1,0,0,1,1,1,0,1,0,0,1], school = ["uni","high","uni","high","high","no","uni","no","high","no","high","high","uni","high","no"])
+
+categorical(df,[:gender,:school])
+
+freqtable(df.gender,df.school)
+
+ChisqTest(freqtable(df.gender,df.school))
+
+#+END_SRC
+
+#+RESULTS: chi2homogeneity
+#+begin_example
+15×2 DataFrame
+│ Row │ gender │ school │
+│     │ Int64  │ String │
+├─────┼────────┼────────┤
+│ 1   │ 0      │ uni    │
+│ 2   │ 0      │ high   │
+│ 3   │ 1      │ uni    │
+│ 4   │ 0      │ high   │
+│ 5   │ 1      │ high   │
+│ 6   │ 0      │ no     │
+│ 7   │ 0      │ uni    │
+│ 8   │ 1      │ no     │
+│ 9   │ 1      │ high   │
+│ 10  │ 1      │ no     │
+│ 11  │ 0      │ high   │
+│ 12  │ 1      │ high   │
+│ 13  │ 0      │ uni    │
+│ 14  │ 0      │ high   │
+│ 15  │ 1      │ no     │
+15×2 DataFrame
+│ Row │ gender       │ school       │
+│     │ Categorical… │ Categorical… │
+├─────┼──────────────┼──────────────┤
+│ 1   │ 0            │ uni          │
+│ 2   │ 0            │ high         │
+│ 3   │ 1            │ uni          │
+│ 4   │ 0            │ high         │
+│ 5   │ 1            │ high         │
+│ 6   │ 0            │ no           │
+│ 7   │ 0            │ uni          │
+│ 8   │ 1            │ no           │
+│ 9   │ 1            │ high         │
+│ 10  │ 1            │ no           │
+│ 11  │ 0            │ high         │
+│ 12  │ 1            │ high         │
+│ 13  │ 0            │ uni          │
+│ 14  │ 0            │ high         │
+│ 15  │ 1            │ no           │
+2×3 Named Array{Int64,2}
+Dim1 ╲ Dim2 │ high    no   uni
+────────────┼─────────────────
+0           │    4     1     3
+1           │    3     3     1
+Pearson's Chi-square Test
+-------------------------
+Population details:
+    parameter of interest:   Multinomial Probabilities
+    value under h_0:         [0.24888888888888888, 0.21777777777777776, 0.14222222222222222, 0.12444444444444444, 0.14222222222222222, 0.12444444444444444]
+    point estimate:          [0.26666666666666666, 0.2, 0.06666666666666667, 0.2, 0.2, 0.06666666666666667]
+    95% confidence interval: Tuple{Float64,Float64}[(0.0667, 0.5428), (0.0, 0.4761), (0.0, 0.3428), (0.0, 0.4761), (0.0, 0.4761), (0.0, 0.3428)]
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    one-sided p-value:           0.3525
+
+Details:
+    Sample size:        15
+    statistic:          2.0854591836734695
+    degrees of freedom: 2
+    residuals:          [0.13801311186847082, -0.14754222271266348, -0.7759402897989853, 0.8295150620062532, 0.59336610396393, -0.6343350474165467]
+    std. residuals:     [0.276641667586244, -0.276641667586244, -1.3263990408562634, 1.3263990408562634, 1.0143051488900838, -1.0143051488900838]
+
+#+end_example
+
+To test two variables for independence the contingency table (i.e. the frequencies) are given to "ChisqTest".
+
+#+name: chi2independence
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit
+
+#joint observed distribution of two variables: one with 3 and the other with 4 observation levels
+X = Int.(floor.(100*rand(3,4)))
+
+ChisqTest(X)
+
+#+END_SRC
+
+#+RESULTS: chi2independence
+#+begin_example
+3×4 Array{Int64,2}:
+ 95  50   6  35
+ 57  67  37   1
+ 75  58  87  53
+Pearson's Chi-square Test
+-------------------------
+Population details:
+    parameter of interest:   Multinomial Probabilities
+    value under h_0:         [0.10948524664130631, 0.09535811804242807, 0.1606960878122399, 0.0844049258247956, 0.07351396765385423, 0.12388464919445805, 0.06270080204127673, 0.05461037597143457, 0.09202859654445457, 0.04292593370518176, 0.037387103549674436, 0.06300419301889582]
+    point estimate:          [0.1529790660225443, 0.09178743961352658, 0.12077294685990338, 0.08051529790660225, 0.10789049919484701, 0.09339774557165861, 0.00966183574879227, 0.05958132045088567, 0.14009661835748793, 0.05636070853462158, 0.001610305958132045, 0.0853462157809984]
+    95% confidence interval: Tuple{Float64,Float64}[(0.1192, 0.1871), (0.058, 0.1259), (0.087, 0.1549), (0.0467, 0.1146), (0.0741, 0.142), (0.0596, 0.1275), (0.0, 0.0438), (0.0258, 0.0937), (0.1063, 0.1742), (0.0225, 0.0905), (0.0, 0.0357), (0.0515, 0.1195)]
+
+Test summary:
+    outcome with 95% confidence: reject h_0
+    one-sided p-value:           <1e-19
+
+Details:
+    Sample size:        621
+    statistic:          104.25088557771437
+    degrees of freedom: 6
+    residuals:          [3.2756353266088998, -0.28814938984431326, -2.481806114530703, -0.3336337389417917, 3.159533209751034, -2.158491636548281, -5.278424369492914, 0.5300869704205037, 3.948577351819669, 1.6159068306326945, -4.610906902703253, 2.218112469830212]
+    std. residuals:     [4.913538993939051, -0.42077976893483837, -4.162188237072603, -0.47038071168204715, 4.336513998266112, -3.4023964697589903, -7.0926826562551, 0.693412459103774, 5.93201010704141, 2.0859671859451194, -5.7944977007376846, 3.2013246996545663]
+
+#+end_example
+
+A note on the degrees of freedom: in the homogeneity and independence application the degrees of freedom are $(nrows-1)*(ncols-1)$ where $nrows$ ($ncols$) is the number of rows (columns) in the /frequency table/. For goodness of fit, the degrees of freedom are number of categories minus 1.
+
+* t-test: mean testing metrtic variables
+
+A t-test is used to 
+- either test that the mean of a certain sample equals a given number $\mu_0$ 
+- or to test whether two samples have the same mean.
+
+#+name: tmean
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit
+
+OneSampleTTest(3.7,0.9,12,5) #samplemean=3.7, samplestd=0.9, 12 observations, H_0 mean of underlyiung distribution from which the 12 obs were independently sampled is 5
+
+OneSampleTTest(10*rand(10),6) #H_0: distribution generating data vector independently has mean 6
+
+#+END_SRC
+
+#+RESULTS: tmean
+#+begin_example
+One sample t-test
+-----------------
+Population details:
+    parameter of interest:   Mean
+    value under h_0:         5
+    point estimate:          3.7
+    95% confidence interval: (3.1282, 4.2718)
+
+Test summary:
+    outcome with 95% confidence: reject h_0
+    two-sided p-value:           0.0004
+
+Details:
+    number of observations:   12
+    t-statistic:              -5.003702332976755
+    degrees of freedom:       11
+    empirical standard error: 0.2598076211353316
+
+One sample t-test
+-----------------
+Population details:
+    parameter of interest:   Mean
+    value under h_0:         6
+    point estimate:          4.41158116158517
+    95% confidence interval: (2.3491, 6.474)
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    two-sided p-value:           0.1154
+
+Details:
+    number of observations:   10
+    t-statistic:              -1.742234817466248
+    degrees of freedom:       9
+    empirical standard error: 0.9117134053863563
+
+#+end_example
+
+
+#+name: tmeandiff
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit
+
+UnequalVarianceTTest(10*rand(10),12*rand(8)) #H_0: distribution generating data vector 1 independently has same mean as distribution generating data vector 2 independently
+
+#+END_SRC
+
+#+RESULTS: tmeandiff
+#+begin_example
+Two sample t-test (unequal variance)
+------------------------------------
+Population details:
+    parameter of interest:   Mean difference
+    value under h_0:         0
+    point estimate:          -3.8487036648762025
+    95% confidence interval: (-7.535, -0.1624)
+
+Test summary:
+    outcome with 95% confidence: reject h_0
+    two-sided p-value:           0.0425
+
+Details:
+    number of observations:   [10,8]
+    t-statistic:              -2.377487941552014
+    degrees of freedom:       8.626589674559433
+    empirical standard error: 1.618811013764295
+
+#+end_example
+
+* Wilcoxon rank test: ordinal variables
+
+This tests the $H_0$ of equal median between two groups (or zero median if only one group is provided). It does not assume a metric but an ordinal scale of the variables (for metric variables a t-test will be more appropriate).
+
+#+name: wilcoxonRank
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit
+
+SignedRankTest([1, 2, 1, 1, -1, -1,3 ]) #H_0: median of distribution generating  the data in iid fashion is zero
+
+SignedRankTest([1, 2, 1, 1, -1, -1,3 ],[0,-1,1,2,3,4,-1]) # H_0: same median in two distributions generating the two data vectors in iid fashion
+
+#+END_SRC
+
+#+RESULTS: wilcoxonRank
+#+begin_example
+Exact Wilcoxon signed rank test
+-------------------------------
+Population details:
+    parameter of interest:   Location parameter (pseudomedian)
+    value under h_0:         0
+    point estimate:          1.0
+    95% confidence interval: (-1.0, 2.0)
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    two-sided p-value:           0.2656
+
+Details:
+    number of observations:      7
+    Wilcoxon rank-sum statistic: 22.0
+    rank sums:                   [22.0, 6.0]
+    adjustment for ties:         120.0
+
+Exact Wilcoxon signed rank test
+-------------------------------
+Population details:
+    parameter of interest:   Location parameter (pseudomedian)
+    value under h_0:         0
+    point estimate:          0.0
+    95% confidence interval: (-4.0, 3.0)
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    two-sided p-value:           0.8750
+
+Details:
+    number of observations:      7
+    Wilcoxon rank-sum statistic: 9.0
+    rank sums:                   [9.0, 12.0]
+    adjustment for ties:         12.0
+
+#+end_example
+
+* Mann-Whitney U test (also Wilcoxon rank-sum test)
+
+Usually this is meant as a test of whether two samples were /independently/ selected from the same distribution. Formally, it tests the $H_0$ that a randomly drawn element of one distribution is equally likely to be greater or smaller than a randomly selected element from the second distribution. In Julia, we simply provide the two samples to the "MannWhitneyUTest" command.
+
+
+#+name: mannWhitney
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit
+
+MannWhitneyUTest(10*rand(20),11*rand(15)) # H_0: a random element of the distribution from which the first data vector is iid sampled is equally likely to be greater or smaller than a random element from the distribution from which the second data vector is iid sampled
+
+#+END_SRC
+
+#+RESULTS: mannWhitney
+#+begin_example
+Exact Mann-Whitney U test
+-------------------------
+Population details:
+    parameter of interest:   Location parameter (pseudomedian)
+    value under h_0:         0
+    point estimate:          0.3362028086359423
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    two-sided p-value:           0.9345
+
+Details:
+    number of observations in each group: [20, 15]
+    Mann-Whitney-U statistic:             153.0
+    rank sums:                            [368.0, 262.0]
+    adjustment for ties:                  0.0
+
+#+end_example
+
+* Binomial test
+
+This tests the $H_0$ that a binomial experiment has success probability $p$.
+
+#+name: binomial
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit
+
+BinomialTest(5,20,0.5) # H_0: a sample with 5 successes out of 20 draws comes from a binomial distribution with success rate 0.5
+
+BinomialTest([true, false, false, false, true, false, true, false, false,true, false,true,],0.5) #H_0 the data vector is generated by a Binomial with success (that is "true") rate 0.5
+
+#+END_SRC
+
+#+RESULTS: binomial
+#+begin_example
+Binomial test
+-------------
+Population details:
+    parameter of interest:   Probability of success
+    value under h_0:         0.5
+    point estimate:          0.25
+    95% confidence interval: (0.0866, 0.491)
+
+Test summary:
+    outcome with 95% confidence: reject h_0
+    two-sided p-value:           0.0414
+
+Details:
+    number of observations: 20
+    number of successes:    5
+
+Binomial test
+-------------
+Population details:
+    parameter of interest:   Probability of success
+    value under h_0:         0.5
+    point estimate:          0.4166666666666667
+    95% confidence interval: (0.1517, 0.7233)
+
+Test summary:
+    outcome with 95% confidence: fail to reject h_0
+    two-sided p-value:           0.7744
+
+Details:
+    number of observations: 12
+    number of successes:    5
+
+#+end_example
+
+* F-test for equal variances
+Perform an F-test of the null hypothesis that two real-valued vectors x and y have equal variances.
+
+#+name: ftest
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit
+VarianceFTest(rand(15),2*rand(12)) #H_0 the distribution generating the first data vector iid has same variance as the distribution generating the second data vector iid
+#+END_SRC
+
+#+RESULTS: ftest
+#+begin_example
+Variance F-test
+---------------
+Population details:
+    parameter of interest:   variance ratio
+    value under h_0:         1.0
+    point estimate:          0.17450169351542974
+
+Test summary:
+    outcome with 95% confidence: reject h_0
+    two-sided p-value:           0.0031
+
+Details:
+    number of observations: [15, 12]
+    F statistic:            0.17450169351542974
+    degrees of freedom:     [14, 11]
+
+#+end_example
+
+* Bootstrapping
+
+It is straightforward to write a little bootstrapping function in Julia. However, the Bootstrap.jl package provides some standard functionality that may come in handy. Quoting from [[https://github.com/juliangehring/Bootstrap.jl][here]], it provides: 
+
+- Random resampling with replacement (BasicSampling)
+- Antithetic resampling, introducing negative correlation between samples (AntitheticSampling)
+- Balanced random resampling, reducing bias (BalancedSampling)
+- Exact resampling, iterating through all unique resamples (ExactSampling): deterministic bootstrap, suited for small samples sizes
+- Resampling of residuals in generalized linear models (ResidualSampling, WildSampling)
+- Maximum Entropy bootstrapping for dependent and non-stationary datasets (MaximumEntropySampling)
+
+
+#+name: bootstrap
+#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
+using StatsKit, Bootstrap
+
+data = 10*rand(100)
+
+n_boot = 1000 #number of sample drawing in the bootstrap procedure
+
+bs1 = bootstrap(std, data, BasicSampling(n_boot)) #uses the standard deviation as the parameter of interest (one can use any other function one is interested in)
+
+bci1 = confint(bs1, BasicConfInt(0.95)) #computes a 95% conf interval and returns a tuple with the point estimate as first element and lower and upper bound of the CI as second and third element
+
+#+END_SRC
+
+#+RESULTS: bootstrap
+#+begin_example
+100-element Array{Float64,1}:
+ 2.794839507209055   
+ 1.5744389061779418  
+ 4.230951415010448   
+ 3.413647117234675   
+ 5.908085939337204   
+ 0.7497853056160908  
+ 9.566497274708123   
+ 8.822471709862212   
+ 8.666321770421712   
+ 5.234687085006387   
+ 1.1497022314182215  
+ 1.1412730614337274  
+ 9.73966242587286    
+ 1.9403167609342131  
+ 6.220218109791727   
+ 7.921438840160652   
+ 3.6236892802538567  
+ 0.005847646054950584
+ 2.7576535964579874  
+ 8.16888710694145    
+ 6.421657006033616   
+ 3.902297876559604   
+ 7.347467352911368   
+ 5.219845822228518   
+ 4.107918026729431   
+ 4.00783503898942    
+ 8.426465920914925   
+ 7.853577627109411   
+ 4.2858850123632575  
+ 2.44778755864683    
+ 1.0470393838672676  
+ 3.9610170661360167  
+ 6.0296925014544716  
+ 5.19791656706156    
+ 6.667730456669907   
+ 2.340447310585292   
+ 1.9709266249721291  
+ 5.509223402228198   
+ 3.3975736670757772  
+ 5.229259446374471   
+ 1.7580638587774788  
+ 3.275944594234803   
+ 0.06640466841274284 
+ 4.656545181720652   
+ 1.5130381955010663  
+ 0.5526643786413388  
+ 4.66045855441924    
+ 1.3323313385661861  
+ 6.061979349425217   
+ 4.082897746080785   
+ 9.585651162341065   
+ 8.602201705681981   
+ 9.636524456174438   
+ 1.738075746223493   
+ 4.222216534705609   
+ 1.0793292456572634  
+ 0.06255008408701412 
+ 4.2844134643420535  
+ 0.4501077140433374  
+ 6.5035058831844434  
+ 0.7244339959355961  
+ 0.6236985505969139  
+ 6.760337219352996   
+ 4.782656479804588   
+ 5.318879752726842   
+ 0.7854823136639388  
+ 2.584551916721982   
+ 2.5934805953340256  
+ 6.522701616944008   
+ 1.661087636495584   
+ 2.832704555289285   
+ 6.69974207587857    
+ 5.23189384836189    
+ 3.249565311636713   
+ 4.7470673786145205  
+ 0.429548642527553   
+ 1.2060903567948755  
+ 0.546661260387713   
+ 9.463780098223214   
+ 1.2431602059565683  
+ 3.9484594394776407  
+ 5.350162802023948   
+ 7.2534019123370586  
+ 2.8990503517144584  
+ 7.9489533972106425  
+ 2.547333830797951   
+ 6.352763246932036   
+ 1.0527269242400972  
+ 9.81388772537059    
+ 3.581572223772438   
+ 7.634357772537332   
+ 3.1741048204246414  
+ 7.624376864239939   
+ 2.6110101628910187  
+ 3.448687522711922   
+ 0.28565839414735006 
+ 6.947492402753919   
+ 6.55467219163405    
+ 0.17833931420389915 
+ 1.706132320537892   
+1000
+Bootstrap Sampling
+  Estimates:
+    │ Var │ Estimate │ Bias       │ StdError │
+    │     │ Float64  │ Float64    │ Float64  │
+    ├─────┼──────────┼────────────┼──────────┤
+    │ 1   │ 2.79271  │ -0.0154213 │ 0.137548 │
+  Sampling: BasicSampling
+  Samples:  1000
+  Data:     Array{Float64,1}: { 100 }
+
+((2.7927122377799423, 2.548817445000449, 3.088782570133125),)
+#+end_example
