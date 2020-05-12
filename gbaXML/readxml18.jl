@@ -209,7 +209,7 @@ end
 
 
 ###usage to produce datafile#####
-#@time allfiles(["O80","O81","O82","Z38.0","Z38.1","Z38.2","Z38.3","Z38.4","Z38.5","Z38.6"],["5-72","5-724","5-73","5-732.2","5-740","5-741","5-742","5-749","5-749.0"]);
+@time allfiles(["O80","O81","O82","Z38.0","Z38.1","Z38.2","Z38.3","Z38.4","Z38.5","Z38.6"],["5-72","5-724","5-73","5-732.2","5-740","5-741","5-742","5-749","5-749.0"]);
 
 
 
@@ -374,4 +374,4 @@ end
 
 
 #####usage to produce data file
-#allfilesQI(["54143","54141"],["09/3","HCH"];savePath="./",filename="dataQI",dataDirectory="/home/christoph/sid/data/GBA2018/Berichte-Teile-A-B-C/",varsString = ["EntwErg","QualBew","QualVgl"],varsFloat=["BErg","Erg","GG","BeobEreig","ErwEreig","RefBereich","VBBlow","VBBhigh","VBKlow","VBKhigh"])
+allfilesQI(["54143","54141"],["09/3","HCH"];savePath="./",filename="dataQI",dataDirectory="/home/christoph/sid/data/GBA2018/Berichte-Teile-A-B-C/",varsString = ["EntwErg","QualBew","QualVgl"],varsFloat=["BErg","Erg","GG","BeobEreig","ErwEreig","RefBereich","VBBlow","VBBhigh","VBKlow","VBKhigh"])
