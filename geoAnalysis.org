@@ -14,7 +14,7 @@
 
 * Geolocation and (driving) distances
 
-The first task is soften to find the coordinates, i.e. longitude and latiutude, of certain addresses. This is called geolocating. The code below uses the webservice nominatim to do this.
+The first task is often to find the coordinates, i.e. longitude and latiutude, of certain addresses. This is called geolocating. The code below uses the webservice nominatim to do this.
 
 #+name: geolocation
 #+BEGIN_SRC julia :exports both :returns output :results output
