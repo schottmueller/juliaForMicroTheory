@@ -17,7 +17,7 @@ Julia's flagship package for regression is GLM.jl. While this package masters st
 
 The usual syntax of GLM.jl is /glm(formula, data, family, link)/ where /formula/ is the regression equation, /data/ is typically a DataFrame containing all the variables used in the formula, /family/ specifies the distribution (Bernoulli(), Binomial(), Gamma(), Normal(), Poisson(), or NegativeBinomial(θ)) and /link/ specifies how the left and right hand side of the formula are linked. Typical combinations of family and link are: Bernoulli (LogitLink), Binomial (LogitLink), Gamma (InverseLink), InverseGaussian (InverseSquareLink), NegativeBinomial (LogLink), Normal (IdentityLink), Poisson (LogLink).
 
-Some more details: The usual standard OLS model can be written as $y=X\beta$ plus some normally distributed error term. That is, $E[Y|X]$ is normally distributed with expectation $X\beta$. Generalized linear models extend this framework by stating that $E[y|X]$ is distributed according to /family/ with expected value $g^{-1}(X\beta)$ where /g/ is the /link/. Put differently, it is now $g(E[y|X])$ that follows the linear model $X*\beta$.
+Some more details: The usual standard OLS model can be written as $y=X\beta$ plus some normally distributed error term. That is, $E[Y|X]$ is normally distributed with expectation $X\beta$. Generalized linear models extend this framework by stating that $E[y|X]$ is distributed according to /family/ with expected value $g^{-1}(X*\beta)$ where /g/ is the /link/. Put differently, it is now $g(E[y|X])$ that follows the linear model $X*\beta$.
 
 The chosen /family/link/ combination depends on the range of the dependent variable. If $y$ is measured on a continuous scale, the Normal/IdentityLink combination will usually be used (sometimes also a LogLink). If $y$ is positive and continuous the Gamma family might be more appropriate. If $y$ is binary, the Binomial with either LogitLink or ProbitLink is appropriate. For count data, the Poisson distribution or the NegativeBinomial could be used. 
 
@@ -294,11 +294,11 @@ R2              0.333     0.000
 The package [[https://github.com/FixedEffects/FixedEffectModels.jl][FixedEffectModels.jl]] provides a fast implementation of fixed effect models. The syntax is /reg(df,formula,Vcov,keywords)/ where 
 - /df/ is the DataFrame,
 - /formula/ has the structure /dependent variable ~ exogenous variables + (endogenous variables ~ instrumental variables) + fe(fixedeffect variable)/. Several fixed effect variables can be added with "+". Interaction of fixed effects can be added by "fe(var1)&fe(var2)" and interaction between a fixed effect and a continuous variable can be added as "fe(var1)&var2".
-- /Vcov/ determines how the varaince should be estimated. Options are "Vcov.robust()" and  "Vcov.cluster(:State)" or  "Vcov.cluster(:State, :Year)".
+- /Vcov/ determines how the variance should be estimated. Options are "Vcov.robust()" and  "Vcov.cluster(:State)" or  "Vcov.cluster(:State, :Year)".
 - /keywords/:
   - "weights = :Pop" would weight observations according to the variable Pop,
   - "subset = df.State .>= 30" would only use observations for which the varaible State is above 30,
-  - "method" can ge set to either ":cpu" or ":gpu". For GPU usage, it is recommended to use another keyword, namely "double_precision = false", to use FLoat32 instead of Float64.
+  - "method" can ge set to either ":cpu" or ":gpu". For GPU usage, it is recommended to use another keyword, namely "double_precision = false", to use Float32 instead of Float64.
   - "save" can be set to ":residuals" to save those, to ":fe" to save the fixed effects or to "true" to save both
   - "contrasts = Dict(:YearC => DummyCoding(base = 80))" can specify contrasts for categorical variables.
 
@@ -358,4 +358,4 @@ X    -0.240669  0.333013 -0.722701    0.486 -0.982667   0.50133
 Note that FixedEffect.jl provides the option to estimate an IV regression in non-Panel data set, i.e. everything works also if we do not specify any "fe()".
 
 * Econometrics.jl
-The [[https://github.com/Nosferican/Econometrics.jl][Econometrics.jl]] package provides an alternative to the standard packages mentioned above. It also provides routines for OLS, limited dependent variables, panel data (fixed effect, random effects, between estimator), models for nominal and ordinal dependent varaible and heteroskedasticity conistent standard errors. The only reason why I do not fully endorse it is that -- for the time being -- it is written and maintained by a single person and therefore there is a elevated risk that it may no longer be maintained at some point in the future. In fact, I cannot install it right now due to unsatisfiable dependency requirements. However, it might be a nice option in the future if it should be maintained.
+The [[https://github.com/Nosferican/Econometrics.jl][Econometrics.jl]] package provides an alternative to the standard packages mentioned above. It also provides routines for OLS, limited dependent variables, panel data (fixed effect, random effects, between estimator), models for nominal and ordinal dependent variable and heteroskedasticity conistent standard errors. The only reason why I do not fully endorse it is that -- at the time of writing -- it is written and maintained by a single person and therefore there is a elevated risk that it may no longer be maintained at some point in the future. However, it might be a nice option in the future if it should be maintained.
