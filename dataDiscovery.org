@@ -1012,7 +1012,7 @@ fit(Histogram,(df.age,df.weight)) #multidimension histograms are supported as we
 
 ** Using DataFramesMeta
 
-The package DataFramesMeta.jl provides some macros that allow to do some of the above mentioned operations in an easier (to read) way. Note that variables are here always referenced with :variablename.
+The package DataFramesMeta.jl provides some macros that allow to do some of the above mentioned operations in an easier (to read) way. Note that variables are here always referenced with :variablename. In the examples below I use ".==" for conditions. This will only work if there are no missing values. In order to do such selections and exclude missing values, use "isequal.(:age,20)" instead of ":age.==20".
 
 |------------+---------------------------------------------------|
 | macro      | explanation                                       |

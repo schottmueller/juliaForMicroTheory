@@ -5,7 +5,7 @@
 #+DESCRIPTION:
 #+KEYWORDS:
 #+LANGUAGE:  en
-#+OPTIONS:   H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t 
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t 
 #+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc 
 #+INFOJS_OPT: view:nil toc:nil ltoc:nil mouse:underline buttons:0 path:http://orgmode.org/org-info.js
 #+EXPORT_SELECT_TAGS: export
@@ -188,7 +188,7 @@ Details:
 
 A note on the degrees of freedom: in the homogeneity and independence application the degrees of freedom are $(nrows-1)*(ncols-1)$ where $nrows$ ($ncols$) is the number of rows (columns) in the /frequency table/. For goodness of fit, the degrees of freedom are number of categories minus 1.
 
-* t-test: mean testing metrtic variables
+* t-test: mean testing metric variables
 
 A t-test is used to 
 - either test that the mean of a certain sample equals a given number $\mu_0$ 
