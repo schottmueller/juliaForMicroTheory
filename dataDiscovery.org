@@ -241,7 +241,7 @@ Usually one does not generate one's own datasets (or inputs the data by hand) bu
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output
 using CSV, DataFrames
 
-df = CSV.read("CISID_HIV.csv";header=1)
+df = CSV.read("CISID_HIV.csv",DataFrame;header=1)
 #+END_SRC
 
 #+RESULTS: importcsv
