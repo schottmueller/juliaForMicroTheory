@@ -14,7 +14,7 @@
 
 * Generating and accessing DataFrames
 
-The DataFrames package allows to work with data. Usually, one loads some data from outside but for now we will generate a toy data frame ourselves. Then we add another oservation to the dataset using vertical concatenation ("vcat") and add the variable age.
+The DataFrames package allows to work with data. Usually, one loads some data from outside but for now we will generate a toy data frame ourselves. Then we add another observation to the dataset using vertical concatenation ("vcat") and add the variable age.
 
 #+name: generate
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
@@ -22,11 +22,11 @@ using DataFrames
 
 df = DataFrame(name = ["Alice", "Bob", "Carrol"], height = [160, 180, 171])
 
-df = vcat(df,DataFrame(name="Dave",height=175))
+df = vcat(df,DataFrame(name="Dave",height=175)) #adding another observation by vertically attaching another data frame
 
-df.age=[20,28,24,26]
+df.age=[20,28,24,26] #create new variable "age"
 
-df
+df # display the data frame
 
 #+END_SRC
 
@@ -56,17 +56,17 @@ Next we show how to access data. There are multiple ways. First, we can access t
 using DataFrames
 df = DataFrame(name = ["Alice", "Bob", "Carrol"], height = [160, 180, 171])
 
-df[1,2]
+df[1,2] #value of the cell in first row, second column (i.e. Alice's height)
 
-df[1:2,2]
+df[1:2,2] #cells in the first two rows, second column (an Array containing height of Alice and Bob)
 
-df.name
+df.name # returns the column associated with the variable name
 
-df[1:2,:name]
+df[1:2,:name] #the first two rows of the variable name
 
-df[2:end,:]
+df[2:end,:] #all rows but the first one and all columns
 
-df[[occursin(r"ob",x) for x in df.name],:]
+df[[occursin(r"ob",x) for x in df.name],:] #all observations containing "ob" in the variable name
 
 #+END_SRC
 
@@ -117,15 +117,15 @@ One can also use conditions, i.e. only read observations satisfying a certain co
 using DataFrames
 df = DataFrame(name = ["Alice", "Bob", "Carrol"], height = [160, 180, 171])
 
-df.height.>170
+df.height.>170 #Array of true and false values, that is true if in the i-th element if the i-th observation has a height greater the 170
 
-df[df.height.>170,:]
+df[df.height.>170,:] #a data frame containing all observations for which height is greater than 170 
 
-df = vcat(df,DataFrame(name="Dave",height=175))
+df = vcat(df,DataFrame(name="Dave",height=175)) # add a new observation
 
-df.age=[20,28,24,26]
+df.age=[20,28,24,26] #add the variable age
 
-df[(df.height.>170).&(df.age.>25),:]
+df[(df.height.>170).&(df.age.>25),:] #data frame containing only those observations for which height is greater than 170 and age exceeds 25
 
 filter(row->(row.height>170) & (row.age>25),df)
 
@@ -301,7 +301,7 @@ The "read" command has some useful keyword arguments in case your data is separa
 The CSV package can also be used to write data. The command is CSV.write(filename, table).
 
 ** Categorical variables
-Often variables indicate to which of a few groups an observation belongs. These variables can be stored in a memory efficient way (this may be important for huge datasets). Categorical arrays are also supported by teh GLM.jl package which is used for regression analysis.
+Often variables indicate to which of a few groups an observation belongs. These variables can be stored in a memory efficient way (this may be important for huge datasets). Categorical arrays are also supported by the GLM.jl package which is used for regression analysis.
 #+name: categorical
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output
 using CategoricalArrays, DataFrames
@@ -324,9 +324,9 @@ using DataFrames
 
 df = DataFrame(name = ["Alice", "Bob", "Carrol","Dave"], height = [160, 180, 171, 169], age = [20,26,20,26])
 
-sort!(df,:age,rev=true)
+sort!(df,:age,rev=true) #sorts data frame df according to age in decreasing order
 
-sort!(df,(:age,:height),rev=(true,false))
+sort!(df,(:age,:height),rev=(true,false)) #sorts data frame df first in decreasing order according to age and within observations with the same age according to height in increasing order
 
 #+END_SRC
 
@@ -359,7 +359,7 @@ sort!(df,(:age,:height),rev=(true,false))
 #+end_example
 
 ** Missing data
-It function "ismissing(x)" is true if $x$ has the value "missing" and false otherwise. This allows to select rows with missing values or drop observations where a certain variable is missing. One can then change the missing value, for example to 0. A useful function is "completecases(df)" which returns a Boolean vector indicating which rows do not contain missing values. Finally, the "dropmissing(df)" function returns a copy of df without rows that contain missing values (without rows with mixxing values in variable x if "dropmissings(df,x)" is used).
+The function "ismissing(x)" is true if $x$ has the value "missing" and false otherwise. This allows to select rows with missing values or drop observations where a certain variable is missing. One can then change the missing value, for example to 0. A useful function is "completecases(df)" which returns a Boolean vector indicating which rows do not contain missing values. Finally, the "dropmissing(df)" function returns a copy of df without rows that contain missing values (without rows with missing values in variable x if "dropmissings(df,x)" is used).
 
 #+name: missing
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output
@@ -373,9 +373,9 @@ coalesce.(df[:,Symbol("2010")],0)
 
 df[completecases(df),:]
 
-dropmissing(df)
+dropmissing(df) #drops all observations for which at least one variable is missing
 
-dropmissing(df,Symbol("2009"))
+dropmissing(df,Symbol("2009")) #drops only those observations for which the variable 2009 is missing
 
 #+END_SRC
 
