@@ -1165,7 +1165,7 @@ function cordf(df) # compute correlation matrix for numerical variables in datas
         newcol = eval(:(DataFrame($iname = ones($n))))
         dfOut = hcat(dfOut,newcol)
         for (j,jname) in enumerate(numVars[i+1:end])
-            mask = .!(ismissing.(df[:,iname]) .| ismissing.(df[:,jname]))
+            mask = .!(ismissing.(df[:,iname]) .| ismissing.(df[:,jname]) .| isnan.(df[:,iname]) .| isnan.(df[:,jname]))
             dfOut[j+i,iname] = cor(df[mask,iname], df[mask,jname])
         end
     end
