@@ -146,7 +146,7 @@ Details:
 
 #+end_example
 
-To test two variables for independence the contingency table (i.e. the frequencies) are given to "ChisqTest".
+To test for independence of two variables the contingency table (i.e. the frequencies) is given to "ChisqTest".
 
 #+name: chi2independence
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output 
