@@ -241,7 +241,7 @@ Usually one does not generate one's own datasets (or inputs the data by hand) bu
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output
 using CSV, DataFrames
 
-df = CSV.read("CISID_HIV.csv",DataFrame;header=1)
+df = DataFrame(CSV.File("CISID_HIV.csv",DataFrame;header=1))
 #+END_SRC
 
 #+RESULTS: importcsv
@@ -365,7 +365,7 @@ The function "ismissing(x)" is true if $x$ has the value "missing" and false oth
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output
 using CSV, DataFrames
 
-df = CSV.read("CISID_HIV.csv";header=1)
+df = DataFrame(CSV.File("CISID_HIV.csv";header=1))
 
 df2 = df[ismissing.(df[:,Symbol("2010")]),:]
 
@@ -779,7 +779,7 @@ rename!(df,[:NAME,:INC10,:INC15])
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output
 using CSV, DataFrames, Statistics
 
-df = CSV.read("CISID_HIV.csv";header=1)
+df = DataFrame(CSV.File("CISID_HIV.csv";header=1))
 
 mean(df[:,Symbol("2009")])
 
