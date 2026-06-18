@@ -235,7 +235,7 @@ df = join(df1,df2,on = :name,kind = :left)
 
 ** Importing Data
 
-Usually one does not generate one's own datasets (or inputs the data by hand) but instead one has a file with data that has to read in. (If you really need to input data by hand, it is probably better to do this in Libre Office Calc, then save the data as a ".csv" file and then read this fil into julia as described below.) The most widely spread format for data files is ".csv" (comma separated values) and the following reads in a data file containing data on the number of AIDS cases as published by the [[http://data.euro.who.int/cisid][WHO]].
+Usually one does not generate one's own datasets (or inputs the data by hand) but instead one has a file with data that has to read in. (If you really need to input data by hand, it is probably better to do this in Libre Office Calc, then save the data as a ".csv" file and then read this fil into julia as described below.) The most widely spread format for data files is ".csv" (comma separated values) and the following reads in a data file containing data on the number of AIDS cases as published by the [[http://data.euro.who.int/cisid][WHO]]. (Note that you have to provide the path to the file on your computer instead of "CISID_HIV.csv" to get this to work on your machine.)
 
 #+name: importcsv
 #+BEGIN_SRC julia :exports both :returns output :tangle yes :results output
@@ -1075,47 +1075,6 @@ another oldie
    3 │ Carrol     171     20         1.71
    4 │ Dave       169     26         1.69
 #+end_example
-
-
-
-
-Another highlight of the DataFramesMeta.jl package is the option of "piping", i.e. chaining several operations, using the "@linq" macro.
-
-#+name: dfmeta2
-#+BEGIN_SRC julia :exports both :returns output :tangle yes :results output
-using DataFrames, Statistics, DataFramesMeta
-
-df = DataFrame(name = ["Alice", "Bob", "Carrol","Dave","Eve"], height = [160, 180, 171, 169,163], age = [20,26,20,26,20])
-
-@linq df |>
-    transform(:heightMeter = :height./100) |> #creates variable height in meters
-    where(:height .> 161) |> #selects only people with height >161
-    by(:age,  :meanHeightMeter = mean(:heightMeter), :sizeRange = maximum(:heightMeter)-minimum(:heightMeter)) |> #computes average height in m by age groups and the range of heights in every age group
-    orderby(:meanHeightMeter) |> #orders by average height of age groups
-    select(:age,:sizeRange) #selects only the age and sizeRange variables (in the above order)
-
-#+END_SRC
-
-#+RESULTS: dfmeta2
-#+begin_example
-5×3 DataFrame
- Row │ name    height  age
-     │ String  Int64   Int64
-─────┼───────────────────────
-   1 │ Alice      160     20
-   2 │ Bob        180     26
-   3 │ Carrol     171     20
-   4 │ Dave       169     26
-   5 │ Eve        163     20
-2×2 DataFrame
- Row │ age    sizeRange
-     │ Int64  Float64
-─────┼──────────────────
-   1 │    20       0.08
-   2 │    26       0.11
-#+end_example
-
-The DataFramesMeta.jl package has also some functionality for GroupedDataFrames (e.g. the type "groupby(df,:age)" returns). Interesting is indexing into subgroups by g[1] for the first subgroup or g[ [1,4,5] ] for subgroups 1,4 and 5. also "subset", "orderby" and "transform" work on subgroups.
 
 ** Multivariate descriptive statistics
 
